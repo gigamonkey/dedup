@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+my %h;
+
+while (<>) {
+    chomp;
+    my ($path, $object) = split /\t/;
+    push @{$h{$object}}, $path;
+}
+
+foreach my $object (keys %h) {
+    if (scalar(@{$h{$object}}) == 1) {
+        print $h{$object}->[0], "\n";
+    }
+}
+
+
+__END__

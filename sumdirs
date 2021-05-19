@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+from collections import defaultdict
+from fileinput import input
+from pathlib import Path
+
+import hashlib
+import sys
+
+verbose = False
+
+def say(x, v=verbose):
+    if verbose or v:
+        print(x, file=sys.stderr)
+    else:
+        pass
+
+
+def emit_hashes(path, directories, files):
+
+    """
+    Directories are hashed by hashing the concatenation of the names
+    and hashes of their direct children.
+    """
+
+    children = 0
+
+    if path in files:
+        hash = files[path]
+
+    else:
+        kids = sorted((c.relative_to(path), c) for c in directories[path])
+
+        m = hashlib.sha1()
+
+        for relative, full in kids:
+            h, c = emit_hashes(full, directories, files)
+            children += (c + 1)
+            m.update(str(relative).encode('utf-8'))
+            m.update(bytes.fromhex(h))
+
+        hash = m.hexdigest()
+
+    print(f"{hash}\t{path}\t{children}")
+    return hash, children
+
+
+if __name__ == "__main__":
+
+    files = dict()
+    directories = defaultdict(set)
+    root = None
+
+    for line in input():
+        obj, path = [Path(x) for x in line[:-1].split("\t")]
+        say(f"hash: {obj.name}; path: {path}")
+
+        files[path] = obj.name
+
+        while path != path.parent and path not in directories[path.parent]:
+            say(f"Adding {path} to {path.parent}")
+            directories[path.parent].add(path)
+            path = path.parent
+            if path == path.parent:
+                root = path
+
+    emit_hashes(root, directories, files)

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Walk the index and move entries for files that no longer exist to
+# the attic file. (The canonical version of the file still exists in
+# .objects and we don't lose track of where it used to exist.)
+
+index=.objects/index.txt
+attic=.objects/attic.txt
+
+while read -r line; do
+    path=`echo "$line" | cut -f2`
+    if [ ! -e "$path" ]; then
+        echo "$line" >> $attic
+    else
+        echo "$line" >> $index.NEW
+    fi
+done < $index
+
+mv $index $index.OLD
+mv $index.NEW $index

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+objects="./.objects"
+
+function buckets {
+    (for x in 1-2 3-4 5-6; do echo "$1" | cut -c $x; done) | paste -s -d / -
+}
+
+function dedup {
+    file=$1
+    echo -n "Deduping $file ..."
+    h=$(shasum "$file" | cut -c 1-40)
+    dir=$objects/$(buckets "$h")
+    mkdir -p "$dir"
+    if [ -e "$dir/$h" ]; then
+        # Hashed version of this file already exists so we replace it
+        # with the canonical version.
+        ln -f "$dir/$h" "$file"
+    else
+        # This is the first time we've seen this file so we make a
+        # object file linked to it.
+        ln "$file" "$dir/$h"
+    fi
+    echo -e "$dir/$h\t$file" >> $objects/index.txt
+    echo "ok."
+}
+
+
+while read -r f; do
+    dedup "$f";
+done
